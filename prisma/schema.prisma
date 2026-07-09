@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Stage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  NOTE
+  TASK
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deals      Deal[]
+  activities Activity[]
+  pipelines  Pipeline[]
+}
+
+model Pipeline {
+  id        String   @id @default(cuid())
+  name      String   @default("Sales Pipeline")
+  stages    String   @default("LEAD,QUALIFIED,PROPOSAL,NEGOTIATION,CLOSED_WON,CLOSED_LOST")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  deals Deal[]
+}
+
+model Deal {
+  id            String    @id @default(cuid())
+  title         String
+  value         Float     @default(0)
+  currency      String    @default("USD")
+  stage         Stage     @default(LEAD)
+  probability   Int       @default(10)
+  closeDate     DateTime?
+  company       String?
+  contactName   String?
+  contactEmail  String?
+  contactPhone  String?
+  notes         String?
+  priority      String    @default("none")
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  pipelineId String
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  activities Activity[]
+
+  @@index([stage])
+  @@index([pipelineId])
+  @@index([userId])
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  subject   String
+  content   String?
+  dueDate   DateTime?
+  completed Boolean      @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  dealId String
+  deal   Deal   @relation(fields: [dealId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([dealId])
+}
