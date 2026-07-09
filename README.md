@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PipelineIQ
 
-## Getting Started
+Kanban CRM for B2B sales teams. Built for the Digital Heroes trial task.
 
-First, run the development server:
+Built with Next.js 16, TypeScript, Prisma 7 (PostgreSQL), Auth.js v5, Tailwind CSS v4, shadcn/ui, and dnd-kit.
+
+**Live demo:** https://web-production-4f2d8.up.railway.app
+
+## Quick start
 
 ```bash
+git clone https://github.com/KevinPratap/pipelineiq
+cd pipelineiq
+npm install
+cp .env.example .env
+# Set DATABASE_URL to your Postgres connection string
+npx prisma generate
+npx tsx prisma/seed.ts
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Railway setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Create a Railway project with PostgreSQL + web service from GitHub
+2. Set `AUTH_SECRET` env var on the web service
+3. In the **Railway dashboard**, go to the web service **Variables** tab and set:
+   - `DATABASE_URL` = `${Postgres.DATABASE_PUBLIC_URL}` (Railway reference — resolves at runtime)
+4. Deploy will auto-build
+5. Once deployed, visit `https://<your-url>/api/seed` (POST) to populate demo data
+6. Login with `demo@pipelineiq.dev` / `demo1234`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Features
 
-## Learn More
+- Visual Kanban pipeline with drag-and-drop (dnd-kit)
+- Deal detail view with activity timeline
+- Dashboard with metrics + stage chart
+- Analytics with conversion tracking
+- Dark/light mode
+- Auth via credentials (NextAuth v5)
 
-To learn more about Next.js, take a look at the following resources:
+## Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Layer | Choice |
+|-------|--------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript (strict) |
+| Database | PostgreSQL via Prisma 7 |
+| Auth | NextAuth v5 (Credentials) |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| Drag & drop | dnd-kit |
+| Charts | Recharts |
+| Deployment | Railway |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project structure
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/
+│   ├── (dashboard)/     # Protected pages (dashboard, pipeline, analytics, settings)
+│   ├── api/             # API routes (auth, seed)
+│   ├── sign-in/         # Login page
+│   ├── sign-up/         # Registration page
+│   └── page.tsx         # Landing page
+├── components/
+│   ├── dashboard/       # Metrics cards, pipeline chart
+│   ├── layout/          # Sidebar, topbar
+│   ├── pipeline/        # Kanban board, column, deal card, create form
+│   └── ui/              # shadcn/ui primitives
+├── lib/
+│   ├── actions/         # Server actions (deals, activities, auth)
+│   ├── auth.ts          # NextAuth config
+│   ├── db.ts            # Prisma client singleton
+│   └── utils.ts         # cn() helper
+└── types/               # Shared TypeScript types
+```
