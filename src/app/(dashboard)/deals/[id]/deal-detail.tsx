@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Phone, Mail, Calendar, Building, Target, Plus } from "lucide-react"
+import { ArrowLeft, Phone, Mail, Calendar, Building, Target, Plus, Send } from "lucide-react"
 import { useState } from "react"
 import { updateDeal } from "@/lib/actions/deal"
 import { createActivity } from "@/lib/actions/activity"
@@ -130,6 +130,15 @@ export function DealDetail({ deal }: { deal: any }) {
             {deal.contactEmail && <p><span className="text-muted-foreground">Email:</span> {deal.contactEmail}</p>}
             {deal.closeDate && <p><span className="text-muted-foreground">Close date:</span> {new Date(deal.closeDate).toLocaleDateString()}</p>}
           </div>
+          {deal.contactEmail && (
+            <a
+              href={`mailto:${deal.contactEmail}?subject=PipelineIQ%3A%20${encodeURIComponent(deal.title)}`}
+              className="mt-3 inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Send email
+            </a>
+          )}
         </div>
       )}
 

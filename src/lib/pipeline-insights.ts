@@ -71,6 +71,7 @@ export function computeDealHealth(deal: {
   closeDate?: Date | null
   createdAt: Date
   updatedAt: Date
+  stageEnteredAt?: Date | null
   activities?: { createdAt: Date }[]
 }): DealHealth {
   const warnings: string[] = []
@@ -80,8 +81,9 @@ export function computeDealHealth(deal: {
   if (deal.stage === "CLOSED_WON") return { score: 100, level: "healthy", warnings: [] }
   if (deal.stage === "CLOSED_LOST") return { score: 0, level: "at-risk", warnings: ["Deal was lost"] }
 
-  // Days in current stage
-  const daysInStage = Math.round((Date.now() - new Date(deal.updatedAt).getTime()) / 86400000)
+  // Days in current stage — use stageEnteredAt if available, fall back to updatedAt
+  const stageStart = deal.stageEnteredAt || deal.updatedAt
+  const daysInStage = Math.round((Date.now() - new Date(stageStart).getTime()) / 86400000)
   const expected = expectedStageDays[deal.stage] || 7
 
   if (daysInStage > expected * 1.5) {
@@ -134,24 +136,18 @@ export function computeDealHealth(deal: {
  * Compute pipeline health summary for all deals.
  */
 export function computePipelineHealth(deals: DealWithActivities[]) {
-  const healthy = deals.filter((d) => {
+  const counts = { healthy: 0, stalling: 0, atRisk: 0 }
+  const allWarnings: string[] = []
+
+  for (const d of deals) {
     const h = computeDealHealth(d)
-    return h.level === "healthy"
-  }).length
+    if (h.level === "healthy") counts.healthy++
+    else if (h.level === "stalling") counts.stalling++
+    else counts.atRisk++
+    allWarnings.push(...h.warnings)
+  }
 
-  const stalling = deals.filter((d) => {
-    const h = computeDealHealth(d)
-    return h.level === "stalling"
-  }).length
-
-  const atRisk = deals.filter((d) => {
-    const h = computeDealHealth(d)
-    return h.level === "at-risk"
-  }).length
-
-  const allWarnings = deals.flatMap((d) => computeDealHealth(d).warnings)
-
-  return { healthy, stalling, atRisk, total: deals.length, warnings: allWarnings }
+  return { ...counts, total: deals.length, warnings: allWarnings }
 }
 
 /**
