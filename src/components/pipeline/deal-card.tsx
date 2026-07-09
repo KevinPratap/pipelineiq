@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import type { DealWithActivities } from "@/types"
 
@@ -13,6 +14,7 @@ const priorityColors: Record<string, "default" | "secondary" | "destructive"> = 
 }
 
 export function DealCard({ deal, isDragOverlay }: { deal: DealWithActivities; isDragOverlay?: boolean }) {
+  const router = useRouter()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: deal.id,
     disabled: isDragOverlay,
@@ -24,13 +26,20 @@ export function DealCard({ deal, isDragOverlay }: { deal: DealWithActivities; is
     opacity: isDragging ? 0.4 : 1,
   }
 
+  const handleClick = () => {
+    if (!isDragging && !isDragOverlay) {
+      router.push(`/deals/${deal.id}`)
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      className={`rounded-lg border bg-card p-3 shadow-sm transition-shadow hover:shadow-md ${isDragOverlay ? "shadow-lg" : ""}`}
+      onClick={handleClick}
+      className={`cursor-pointer rounded-lg border bg-card p-3 shadow-sm transition-shadow hover:shadow-md ${isDragOverlay ? "shadow-lg" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium">{deal.title}</p>

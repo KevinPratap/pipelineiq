@@ -42,6 +42,9 @@ export default function LandingPage() {
               <Link href="/sign-in">Sign in</Link>
             </Button>
           </div>
+          <p className="mt-6 text-xs text-muted-foreground">
+            Demo: demo@pipelineiq.dev / demo1234
+          </p>
         </section>
 
         <section className="border-t py-24">
