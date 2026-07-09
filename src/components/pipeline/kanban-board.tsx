@@ -24,6 +24,8 @@ export function KanbanBoard({ initialDeals }: { initialDeals: DealWithActivities
   const [activeDeal, setActiveDeal] = useState<DealWithActivities | null>(null)
   const [search, setSearch] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [exitReason, setExitReason] = useState("")
+  const [pendingLostMove, setPendingLostMove] = useState<{ dealId: string; stage: string } | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -46,7 +48,6 @@ export function KanbanBoard({ initialDeals }: { initialDeals: DealWithActivities
     const dealId = active.id as string
     const overId = over.id as string
 
-    // Determine target stage
     let targetStage = stages.find((s) => overId === s)
     if (!targetStage) {
       const overDeal = deals.find((d) => d.id === overId)
@@ -56,6 +57,13 @@ export function KanbanBoard({ initialDeals }: { initialDeals: DealWithActivities
 
     const draggedDeal = deals.find((d) => d.id === dealId)
     if (!draggedDeal || draggedDeal.stage === targetStage) return
+
+    // If moving to CLOSED_LOST, show exit reason dialog first
+    if (targetStage === "CLOSED_LOST") {
+      setPendingLostMove({ dealId, stage: "CLOSED_LOST" })
+      setExitReason("")
+      return
+    }
 
     // Optimistic update
     setDeals((prev) =>
@@ -108,6 +116,47 @@ export function KanbanBoard({ initialDeals }: { initialDeals: DealWithActivities
           {activeDeal ? <DealCard deal={activeDeal} isDragOverlay /> : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Lost Deal Reason Dialog */}
+      <Dialog open={!!pendingLostMove} onOpenChange={(o) => { if (!o) setPendingLostMove(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Why was this deal lost?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Help your team understand why deals don't close.</p>
+            <select
+              value={exitReason}
+              onChange={(e) => setExitReason(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Select a reason...</option>
+              <option value="price">Price too high</option>
+              <option value="competition">Lost to competitor</option>
+              <option value="timing">Bad timing</option>
+              <option value="budget">No budget</option>
+              <option value="product">Product fit</option>
+              <option value="other">Other</option>
+            </select>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPendingLostMove(null)}>Cancel</Button>
+              <Button
+                disabled={!exitReason}
+                onClick={async () => {
+                  if (!pendingLostMove) return
+                  setDeals((prev) =>
+                    prev.map((d) => (d.id === pendingLostMove.dealId ? { ...d, stage: "CLOSED_LOST" as any } : d))
+                  )
+                  await moveDeal(pendingLostMove.dealId, "CLOSED_LOST", exitReason || undefined)
+                  setPendingLostMove(null)
+                }}
+              >
+                Mark as Lost
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -39,13 +39,17 @@ export async function createDeal(formData: FormData) {
   return { success: true, deal }
 }
 
-export async function moveDeal(dealId: string, stage: string) {
+export async function moveDeal(dealId: string, stage: string, exitReason?: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
 
   await prisma.deal.update({
     where: { id: dealId },
-    data: { stage: stage as any },
+    data: {
+      stage: stage as any,
+      stageExitReason: stage === "CLOSED_LOST" ? (exitReason || null) : null,
+      stageEnteredAt: new Date(),
+    },
   })
 
   revalidatePath("/pipeline")

@@ -1,6 +1,7 @@
 import { getDeals } from "@/lib/actions/deal"
 import { MetricsCards } from "@/components/dashboard/metrics-cards"
 import { PipelineChart } from "@/components/dashboard/pipeline-chart"
+import { PipelineCoach } from "@/components/dashboard/pipeline-coach"
 import Link from "next/link"
 
 const stageLabels: Record<string, string> = {
@@ -11,6 +12,15 @@ const stageLabels: Record<string, string> = {
 export default async function DashboardPage() {
   const deals = await getDeals()
 
+  // Forecast calculation
+  const bestCase = deals.reduce((s, d) => s + d.value, 0)
+  const expected = deals
+    .filter((d) => d.stage !== "CLOSED_LOST")
+    .reduce((s, d) => s + d.value * (d.probability / 100), 0)
+  const worstCase = deals
+    .filter((d) => d.stage === "CLOSED_WON")
+    .reduce((s, d) => s + d.value, 0)
+
   return (
     <div className="space-y-6">
       <div>
@@ -19,6 +29,43 @@ export default async function DashboardPage() {
       </div>
 
       <MetricsCards deals={deals} />
+
+      {/* Forecast Range */}
+      <div className="rounded-lg border p-4">
+        <h3 className="mb-3 text-sm font-medium">Revenue Forecast Range</h3>
+        <div className="flex items-end gap-6">
+          <div>
+            <p className="text-xs text-muted-foreground">Best case</p>
+            <p className="text-xl font-semibold text-green-600 dark:text-green-400">
+              ${bestCase.toLocaleString()}
+            </p>
+          </div>
+          <div className="flex-1 self-center">
+            <div className="relative h-3 rounded-full bg-muted">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-foreground/20"
+                style={{ width: `${(expected / Math.max(bestCase, 1)) * 100}%` }}
+              />
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-foreground/10"
+                style={{ width: `${(bestCase / Math.max(bestCase, 1)) * 100}%` }}
+              />
+            </div>
+            <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+              <span>Worst: ${worstCase.toLocaleString()}</span>
+              <span>Expected: ${Math.round(expected).toLocaleString()}</span>
+              <span>Best: ${bestCase.toLocaleString()}</span>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Expected</p>
+            <p className="text-xl font-semibold">${Math.round(expected).toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+
+      <PipelineCoach deals={deals} />
+
       <PipelineChart deals={deals} />
 
       <div className="rounded-lg border">
