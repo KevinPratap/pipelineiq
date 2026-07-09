@@ -4,9 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, KanbanSquare, BarChart3, Settings, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useState } from "react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import type { DealWithActivities } from "@/types"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -15,9 +15,25 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 
-export function Sidebar({ userName, userEmail }: { userName: string; userEmail: string }) {
+export function Sidebar({
+  userName,
+  userEmail,
+  deals,
+}: {
+  userName: string
+  userEmail: string
+  deals?: DealWithActivities[]
+}) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+
+  const stageCounts = deals
+    ? {
+        active: deals.filter((d) => d.stage !== "CLOSED_WON" && d.stage !== "CLOSED_LOST").length,
+        won: deals.filter((d) => d.stage === "CLOSED_WON").length,
+        total: deals.length,
+      }
+    : null
 
   const nav = (
     <nav className="flex-1 space-y-1 p-4">
@@ -37,7 +53,12 @@ export function Sidebar({ userName, userEmail }: { userName: string; userEmail: 
             )}
           >
             <Icon className="h-4 w-4 shrink-0" />
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.href === "/pipeline" && stageCounts && (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {stageCounts.active}
+              </span>
+            )}
           </Link>
         )
       })}
@@ -55,12 +76,18 @@ export function Sidebar({ userName, userEmail }: { userName: string; userEmail: 
           <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
         </div>
       </div>
+      {stageCounts && (
+        <div className="mt-3 flex gap-3 text-xs text-muted-foreground">
+          <span>{stageCounts.total} deals</span>
+          <span>·</span>
+          <span>{stageCounts.won} won</span>
+        </div>
+      )}
     </div>
   )
 
   return (
     <>
-      {/* Mobile hamburger */}
       <button
         className="fixed left-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-md border bg-background shadow-sm md:hidden"
         onClick={() => setOpen(!open)}
@@ -68,12 +95,8 @@ export function Sidebar({ userName, userEmail }: { userName: string; userEmail: 
         {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
 
-      {/* Mobile overlay */}
-      {open && (
-        <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setOpen(false)} />
-      )}
+      {open && <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setOpen(false)} />}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           "flex w-60 flex-col border-r bg-background transition-transform",

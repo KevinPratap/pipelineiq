@@ -1,8 +1,11 @@
 import { getDeals } from "@/lib/actions/deal"
+import { prisma } from "@/lib/db"
+import { auth } from "@/lib/auth"
 import { MetricsCards } from "@/components/dashboard/metrics-cards"
 import { PipelineChart } from "@/components/dashboard/pipeline-chart"
 import { PipelineCoach } from "@/components/dashboard/pipeline-coach"
 import { DashboardOnboarding } from "@/components/dashboard/dashboard-onboarding"
+import { Phone, Mail, Calendar, Building, Target } from "lucide-react"
 import Link from "next/link"
 
 const stageLabels: Record<string, string> = {
@@ -10,13 +13,26 @@ const stageLabels: Record<string, string> = {
   NEGOTIATION: "Negotiation", CLOSED_WON: "Closed Won", CLOSED_LOST: "Closed Lost",
 }
 
+const activityIcons: Record<string, any> = {
+  CALL: Phone, EMAIL: Mail, MEETING: Calendar, NOTE: Building, TASK: Target,
+}
+
 export default async function DashboardPage() {
+  const session = await auth()
   const deals = await getDeals()
 
   // Show onboarding if no deals exist
   if (deals.length === 0) {
     return <DashboardOnboarding />
   }
+
+  // Recent activities across all deals
+  const recentActivities = await prisma.activity.findMany({
+    where: { userId: session?.user?.id },
+    include: { deal: { select: { title: true, id: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 6,
+  })
 
   // Forecast calculation
   const bestCase = deals.reduce((s, d) => s + d.value, 0)
@@ -70,8 +86,40 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <PipelineCoach deals={deals} />
+      {/* Activity Feed */}
+      {recentActivities.length > 0 && (
+        <div className="rounded-lg border p-4">
+          <h3 className="mb-4 text-sm font-medium">Recent Activity</h3>
+          <div className="space-y-3">
+            {recentActivities.map((a) => {
+              const Icon = activityIcons[a.type] || Building
+              return (
+                <div key={a.id} className="flex gap-3">
+                  <div className="mt-0.5 rounded-full border p-1.5">
+                    <Icon className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{a.type}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(a.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm truncate">
+                      <Link href={`/deals/${a.deal.id}`} className="font-medium hover:underline">
+                        {a.deal.title}
+                      </Link>
+                      {a.subject && <> — {a.subject}</>}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
+      <PipelineCoach deals={deals} />
       <PipelineChart deals={deals} />
 
       <div className="rounded-lg border">
