@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && (node -e \"process.env.RAILWAY_ENVIRONMENT && process.exit(1)\" || prisma db push --accept-data-loss) && next build",
-    "start": "next start",
+    "build": "prisma generate && next build",
+    "start": "prisma generate && prisma db push --accept-data-loss && next start",
     "lint": "eslint",
     "postinstall": "prisma generate"
   },

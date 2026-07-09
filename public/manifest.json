@@ -1,0 +1,10 @@
+{
+  "name": "PipelineIQ",
+  "short_name": "PipelineIQ",
+  "description": "Kanban CRM for B2B sales teams",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a0a",
+  "icons": []
+}
